@@ -4,6 +4,7 @@ import { graphql, useLazyLoadQuery, useMutation } from "react-relay";
 import { languages, type Language } from "../i18n";
 import type { AppProps } from "../desktop/apps";
 import { errorCode } from "../desktop/errors";
+import { StatusLine, type Status } from "../desktop/StatusLine";
 import { applyTheme, savedTheme, type Theme } from "../desktop/prefs";
 import type { SettingsPrefsMutation } from "./__generated__/SettingsPrefsMutation.graphql";
 import type { SettingsPasswordMutation } from "./__generated__/SettingsPasswordMutation.graphql";
@@ -133,18 +134,6 @@ function Appearance() {
         </select>
       </fieldset>
     </>
-  );
-}
-
-/** Feedback line shown under a form after submit. */
-type Status = { ok: boolean; text: string } | undefined;
-
-function StatusLine({ status }: { status: Status }) {
-  if (!status) return null;
-  return (
-    <div role="status" className={`alert alert-soft mt-3 ${status.ok ? "alert-success" : "alert-error"}`}>
-      {status.text}
-    </div>
   );
 }
 

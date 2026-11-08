@@ -32,7 +32,10 @@ pub struct Services {
     /// Subscribed to `EVENTS_CHANNEL`; GraphQL subscriptions read from `events.message_rx()`.
     pub events: SubscriberClient,
     pub s3: Arc<dyn ObjectStore>,
+    /// Short timeouts: health checks and small API calls.
     pub http: reqwest::Client,
+    /// LLM upstreams: no total timeout (streams last minutes), only connect and per-read timeouts.
+    pub llm: reqwest::Client,
 }
 
 impl Services {
@@ -82,6 +85,10 @@ impl Services {
             events,
             s3: Arc::new(s3.build()?),
             http: reqwest::Client::builder().timeout(CHECK_TIMEOUT).build()?,
+            llm: reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(10))
+                .read_timeout(Duration::from_secs(300))
+                .build()?,
         })
     }
 

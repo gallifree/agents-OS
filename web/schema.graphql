@@ -1,9 +1,43 @@
 """
+A bearer token for `/v1`. Only its hash is stored.
+"""
+type ApiKey implements Node {
+	id: ID!
+	cacheKey: String!
+	name: String!
+	createdAt: DateTime!
+	lastUsedAt: DateTime
+}
+
+type CreatedApiKey {
+	apiKey: ApiKey!
+	"""
+	The token, returned this once only.
+	"""
+	token: String!
+}
+
+"""
 Implement the DateTime<Utc> scalar
 
 The input/output is a string in RFC3339 format.
 """
 scalar DateTime
+
+"""
+Requests per provider and model over a period.
+"""
+type ModelUsage {
+	provider: String!
+	model: String!
+	requests: Int!
+	"""
+	Requests answered with an error status (≥ 400, including 499: client gone).
+	"""
+	errors: Int!
+	promptTokens: Int!
+	completionTokens: Int!
+}
 
 type Mutation {
 	"""
@@ -28,6 +62,26 @@ type Mutation {
 	Admins only.
 	"""
 	createUser(username: String!, password: String!, isAdmin: Boolean!): User!
+	"""
+	Admins only. `apiKey` may be empty for local providers.
+	"""
+	createProvider(name: String!, baseUrl: String!, apiKey: String! = ""): Provider!
+	"""
+	Admins only. Omitted fields keep their value; an empty `apiKey` removes the key.
+	"""
+	updateProvider(id: ID!, baseUrl: String, apiKey: String, enabled: Boolean): Provider!
+	"""
+	Admins only. Usage rows stay (with the provider name).
+	"""
+	deleteProvider(id: ID!): Boolean!
+	"""
+	A new API key for the viewer. The token is in the answer only: it can't be shown again.
+	"""
+	createApiKey(name: String!): CreatedApiKey!
+	"""
+	Revokes one of the viewer's own keys; takes effect on the next request.
+	"""
+	revokeApiKey(id: ID!): Boolean!
 }
 
 """
@@ -72,6 +126,22 @@ type Prefs {
 	language: String
 }
 
+"""
+An OpenAI-compatible upstream. Its models are reached as `"<name>/<model>"` on `/v1`.
+"""
+type Provider implements Node {
+	id: ID!
+	cacheKey: String!
+	name: String!
+	baseUrl: String!
+	"""
+	The key itself is never sent back.
+	"""
+	hasApiKey: Boolean!
+	enabled: Boolean!
+	createdAt: DateTime!
+}
+
 type Query {
 	"""
 	State of every backing service. Admins only: errors expose internal hostnames.
@@ -93,6 +163,22 @@ type Query {
 	All users, oldest first. Admins only.
 	"""
 	users(after: String, first: Int): UserConnection!
+	"""
+	Admins only.
+	"""
+	providers: [Provider!]!
+	"""
+	Asks the provider for its models: also the connection test. Admins only.
+	"""
+	providerModels(id: ID!): [String!]!
+	"""
+	The viewer's own API keys.
+	"""
+	apiKeys: [ApiKey!]!
+	"""
+	Usage over the last `days` days (1–365): everyone's for admins, the viewer's own otherwise.
+	"""
+	llmUsage(days: Int! = 30): [ModelUsage!]!
 }
 
 type ServiceStatus {

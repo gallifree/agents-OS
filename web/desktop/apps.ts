@@ -1,5 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { Activity, Info, Settings, type LucideIcon } from "lucide-react";
+import { Activity, BrainCircuit, Info, Settings, type LucideIcon } from "lucide-react";
 import type { Viewer } from "./App";
 import type { Size } from "./windows";
 
@@ -25,6 +25,13 @@ export const apps: AppDef[] = [
     defaultSize: { w: 560, h: 520 },
     adminOnly: true,
     component: lazy(() => import("../apps/System")),
+  },
+  {
+    id: "models",
+    titleKey: "apps.models.title",
+    icon: BrainCircuit,
+    defaultSize: { w: 680, h: 560 },
+    component: lazy(() => import("../apps/Models")),
   },
   {
     id: "settings",

@@ -1,5 +1,6 @@
 mod auth;
 mod config;
+mod gateway;
 mod graphql;
 mod services;
 
@@ -75,6 +76,8 @@ async fn serve() -> Result<()> {
         .route("/health", get(|| async { "ok" }))
         // POST: queries and mutations; GET: WebSocket subscriptions (graphql-transport-ws).
         .route("/graphql", get(graphql_ws).post(graphql_http))
+        // OpenAI-compatible LLM gateway, for machines (API keys, not cookies).
+        .merge(gateway::router())
         .with_state(state)
         .fallback_service(spa);
 

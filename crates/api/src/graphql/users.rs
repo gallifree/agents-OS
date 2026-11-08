@@ -1,25 +1,18 @@
 use async_graphql::{
-    Context, ID, Interface, Object, Result, SimpleObject,
+    Context, ID, Object, Result, SimpleObject,
     connection::{Connection, Edge, query},
 };
 use chrono::{DateTime, Utc};
-use crypto::{Keys, TokenError};
+use crypto::Keys;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
-use super::{ID_TTL, auth_error, coded, require_admin, require_viewer, services};
+use super::{
+    ID_TTL, Node, auth_error, coded, decode_id, internal, llm, require_admin, require_viewer,
+    services,
+};
 use crate::auth;
-
-/// Relay object identification: `id` is an expiring encrypted token, `cacheKey` the stable client identity.
-#[derive(Interface)]
-#[graphql(
-    field(name = "id", ty = "&ID"),
-    field(name = "cache_key", ty = "&String")
-)]
-pub enum Node {
-    User(User),
-}
 
 #[derive(SimpleObject, Clone)]
 pub struct User {
@@ -78,16 +71,9 @@ async fn load_user(pg: &PgPool, keys: &Keys, id: Uuid) -> Result<Option<User>> {
     ))
     .bind(id)
     .fetch_optional(pg)
-    .await?;
+    .await
+    .map_err(internal)?;
     Ok(row.map(|r| User::from_row(r, keys)))
-}
-
-/// Decodes a client ID, mapping failures to the codes the UI handles.
-fn decode_id(keys: &Keys, id: &str) -> Result<(String, Uuid)> {
-    keys.decode_id(id).map_err(|e| match e {
-        TokenError::Expired => coded("ID_EXPIRED", "id expired, refetch it"),
-        TokenError::Invalid => coded("INVALID_ID", "invalid id"),
-    })
 }
 
 #[derive(Default)]
@@ -120,6 +106,12 @@ impl UsersQuery {
             "User" if viewer.is_admin || viewer.user_id == uuid => {
                 Ok(load_user(&s.pg, &s.keys, uuid).await?.map(Node::User))
             }
+            "Provider" if viewer.is_admin => Ok(llm::load_provider(&s.pg, &s.keys, uuid)
+                .await?
+                .map(Node::Provider)),
+            "ApiKey" => Ok(llm::load_api_key(&s.pg, &s.keys, viewer.user_id, uuid)
+                .await?
+                .map(Node::ApiKey)),
             _ => Ok(None),
         }
     }
@@ -153,7 +145,8 @@ impl UsersQuery {
                 .bind(after)
                 .bind(limit as i64 + 1)
                 .fetch_all(&s.pg)
-                .await?;
+                .await
+                .map_err(internal)?;
                 let mut connection = Connection::new(after.is_some(), rows.len() > limit);
                 connection
                     .edges
@@ -251,7 +244,8 @@ impl UsersMutation {
             .bind(Json(patch))
             .bind(viewer.user_id)
             .execute(&s.pg)
-            .await?;
+            .await
+            .map_err(internal)?;
         load_user(&s.pg, &s.keys, viewer.user_id)
             .await?
             .ok_or_else(|| "user not found".into())

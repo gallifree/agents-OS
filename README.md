@@ -2,7 +2,7 @@
 
 A self-hosted AI agent platform inspired by [taOS](./taOS), rewritten from scratch with **no Python**: a Rust backend, a React web desktop, and WASM plugins, all shipped with Docker Compose for **x86_64 and arm64**.
 
-> **Status:** milestone 2 done: setup with a one-time code, login/logout, sessions, users (admin), server-side preferences, Relay `node(id:)` with encrypted expiring IDs. Next: milestone 3 (LLM gateway). See [Still open](#still-open).
+> **Status:** milestone 3 done: LLM gateway (OpenAI-compatible providers with encrypted keys, `/v1` with SSE streaming, per-user API keys, usage). Before it: setup, login, sessions, users, Relay IDs. Next: milestone 4 (agents + channels). See [Still open](#still-open).
 
 ## Stack
 
@@ -53,11 +53,17 @@ The first version covers **all features of taOS** (see `taOS/`), delivered in mi
 - **Capability IDs** (share links, invites, downloads): same format as global IDs, with their own purpose and a custom expiry.
 - **Sessions**: an encrypted, purpose-bound and expiring token (randomized AEAD) wrapping the user's GlobalID and a session id. A session row in Postgres allows revocation.
 - **Agent tokens**: scoped, revocable, stored hashed.
+- **API keys** (`/v1`): `ra_` + 244 random bits, stored as SHA-256, revocable, owned by a user.
 - **Secrets at rest** (provider API keys…): encrypted with the `secrets` subkey.
 - **Docker socket**: used for app installs and per-profile browsers, always behind a socket proxy.
 
+## LLM gateway
+
+Admins add providers in the **Models** app: any OpenAI-compatible API (OpenAI, Anthropic, OpenRouter, Ollama, vLLM, llama.cpp…). Programs call `POST /v1/chat/completions` (streaming or not), `POST /v1/embeddings` and `GET /v1/models` with `Authorization: Bearer ra_…`, and name models `"<provider>/<model>"` (e.g. `openai/gpt-4o`). Token usage is recorded per user and model, streams included (the gateway asks upstreams for `include_usage`).
+
 ## Still open
 
+- LLM gateway: budgets, fallbacks between providers, per-key model allowlists (with agent tokens, milestone 4)
 - Evaluation harness for the memory system (LongMemEval)
 - Real-condition tests of Valkey memory growth on 4–8 GB boards; add a recent-in-Valkey / older-in-Postgres split only if needed
 

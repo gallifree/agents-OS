@@ -59,6 +59,47 @@
       "realtime": "Real time",
       "sendPing": "Send ping",
       "noPings": "Send a ping: it goes through Valkey pub/sub and comes back over WebSocket."
+    },
+    "models": {
+      "title": "Models",
+      "tabs": {
+        "providers": "Providers",
+        "keys": "API keys",
+        "usage": "Usage"
+      },
+      "noProviders": "No provider yet. Add one below: OpenAI, Anthropic, OpenRouter, Ollama or any OpenAI-compatible API.",
+      "newProvider": "New provider",
+      "name": "Name",
+      "nameHint": "Models are called \"<name>/<model>\", e.g. openai/gpt-4o.",
+      "baseUrl": "Base URL",
+      "apiKey": "API key",
+      "apiKeyHint": "Stored encrypted. Leave empty for local providers such as Ollama.",
+      "providerCreated": "Provider added.",
+      "enabled": "Enabled",
+      "hasKey": "API key stored",
+      "test": "Test",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete?",
+      "replaceKey": "New API key (leave empty to keep the current one)",
+      "clearKey": "Remove the stored key",
+      "saved": "Saved.",
+      "modelCount_one": "{{count}} model",
+      "modelCount_other": "{{count}} models",
+      "keysIntro": "API keys let programs use the OpenAI-compatible API at /v1 with your account.",
+      "lastUsed": "Last used",
+      "revoke": "Revoke",
+      "newKey": "New API key",
+      "tokenOnce": "Copy this key now: it will not be shown again.",
+      "copy": "Copy",
+      "lastDays_one": "Last 24 hours",
+      "lastDays_other": "Last {{count}} days",
+      "noUsage": "No requests in this period.",
+      "model": "Model",
+      "requests": "Requests",
+      "errors": "Errors",
+      "promptTokens": "Prompt tokens",
+      "completionTokens": "Completion tokens"
     }
   },
   "auth": {
@@ -84,6 +125,14 @@
     "UNAUTHENTICATED": "Your session has ended. Sign in again.",
     "FORBIDDEN": "Administrators only.",
     "INTERNAL": "Server error. Try again later.",
-    "NETWORK": "Can’t reach the server."
+    "NETWORK": "Can’t reach the server.",
+    "INVALID_PROVIDER_NAME": "Name: 1–32 characters, lowercase letters, digits, \"-\" or \"_\".",
+    "INVALID_URL": "Enter an http(s) URL, e.g. https://api.openai.com/v1.",
+    "PROVIDER_EXISTS": "A provider with this name already exists.",
+    "PROVIDER_UNREACHABLE": "The provider did not answer: check the URL and the API key.",
+    "INVALID_NAME": "Name: 1–64 characters.",
+    "NOT_FOUND": "It no longer exists. Refresh.",
+    "INVALID_ID": "Invalid reference. Refresh.",
+    "ID_EXPIRED": "This page is out of date. Refresh."
   }
 }

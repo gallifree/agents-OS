@@ -40,6 +40,7 @@ Guidance for coding agents working in this repository. Read [README.md](./README
 - `node(id:)` returns null (not an error) for objects the viewer may not see, so IDs can't be probed.
 - Errors the UI acts on carry `extensions.code` (`coded()` in `graphql/mod.rs`, `AuthError::code`); the UI translates codes (`errors.*` in `web/locales`), never server messages. Infrastructure errors are logged and returned as `INTERNAL`.
 - The first admin is created with the one-time setup code logged at startup while there are no users (`bin/dev` prints it).
+- `/v1` (`crates/api/src/gateway.rs`) authenticates with API keys only, never the session cookie, and answers OpenAI-shaped errors (`{"error": {"message", "type", "code"}}`).
 - Auth logic lives in `crates/api/src/auth.rs` and is tested against real Postgres + Valkey containers (`cargo test` needs Docker).
 
 ## Planned layout
@@ -51,7 +52,7 @@ crates/
   api/        axum + async-graphql, REST machine APIs
   crypto/     master key, sealed tokens, Relay IDs, cacheKey (exists)
   core/       domain types, auth, channels (name it e.g. `domain`: `core` clashes with Rust's core crate)
-  gateway/    LLM router (OpenAI-compatible)
+  gateway/    LLM router (OpenAI-compatible); lives in crates/api/src/gateway.rs until something else needs it
   memory/     taOSmd rewrite (embeddings, rerank, knowledge graph)
   plugins/    Extism host + host functions
   worker/     Valkey Stream consumers, outbox → Typesense
