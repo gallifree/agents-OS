@@ -1,4 +1,8 @@
-use std::{future::Future, sync::Arc, time::Duration};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use anyhow::Result;
 use async_graphql::SimpleObject;
@@ -20,6 +24,9 @@ pub const EVENTS_CHANNEL: &str = "events";
 #[derive(Clone)]
 pub struct Services {
     pub cfg: Arc<Config>,
+    pub keys: Keys,
+    /// One-time code for creating the first admin; set at startup while there are no users.
+    pub setup_code: Arc<Mutex<Option<String>>>,
     pub pg: PgPool,
     pub valkey: Client,
     /// Subscribed to `EVENTS_CHANNEL`; GraphQL subscriptions read from `events.message_rx()`.
@@ -31,8 +38,7 @@ pub struct Services {
 impl Services {
     /// Connects lazily: the app starts even when a service is down, and the status query reports it.
     pub fn connect(cfg: Config) -> Result<Self> {
-        // Fail fast on a bad MASTER_KEY. shortcut: keys aren't kept until sessions/IDs use them (milestone 2).
-        Keys::from_master(&cfg.master_key)?;
+        let keys = Keys::from_master(&cfg.master_key)?;
 
         let pg = PgPoolOptions::new()
             .max_connections(10)
@@ -68,6 +74,8 @@ impl Services {
         }
 
         Ok(Self {
+            keys,
+            setup_code: Arc::default(),
             cfg: Arc::new(cfg),
             pg,
             valkey,

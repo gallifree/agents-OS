@@ -1,54 +1,39 @@
-use async_graphql::{Context, Object, Result, Schema, SimpleObject, Subscription};
+use async_graphql::{Context, Object, Result, SimpleObject, Subscription};
 use fred::prelude::*;
 use futures::Stream;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast::error::RecvError;
 
-use crate::services::{EVENTS_CHANNEL, ServiceStatus, Services};
+use super::{require_admin, require_viewer, services};
+use crate::services::{EVENTS_CHANNEL, ServiceStatus};
 
-pub type AppSchema = Schema<Query, Mutation, SubscriptionRoot>;
-
-pub fn schema(services: Services) -> AppSchema {
-    Schema::build(Query, Mutation, SubscriptionRoot)
-        .data(services)
-        .finish()
-}
-
-/// SDL for frontend codegen (`api schema`).
-pub fn sdl() -> String {
-    Schema::build(Query, Mutation, SubscriptionRoot)
-        .finish()
-        .sdl()
-}
-
-pub struct Query;
+#[derive(Default)]
+pub struct SystemQuery;
 
 #[Object]
-impl Query {
-    /// State of every backing service.
-    // shortcut: unauthenticated until milestone 2 (login); restrict to admins then, errors expose internal hostnames.
-    async fn system_status(&self, ctx: &Context<'_>) -> Vec<ServiceStatus> {
-        ctx.data_unchecked::<Services>().status().await
+impl SystemQuery {
+    /// State of every backing service. Admins only: errors expose internal hostnames.
+    async fn system_status(&self, ctx: &Context<'_>) -> Result<Vec<ServiceStatus>> {
+        require_admin(ctx)?;
+        Ok(services(ctx).status().await)
     }
 }
 
-pub struct Mutation;
+#[derive(Default)]
+pub struct SystemMutation;
 
 const MAX_PING_LEN: usize = 200;
 
 #[Object]
-impl Mutation {
+impl SystemMutation {
     /// Publishes a ping on Valkey pub/sub; every `pings` subscriber, on any backend instance, receives it.
     async fn ping(&self, ctx: &Context<'_>, message: String) -> Result<bool> {
+        require_viewer(ctx)?;
         if message.chars().count() > MAX_PING_LEN {
             return Err(format!("message longer than {MAX_PING_LEN} characters").into());
         }
         let event = serde_json::to_string(&Event::Ping(Ping { message }))?;
-        let _: i64 = ctx
-            .data_unchecked::<Services>()
-            .valkey
-            .publish(EVENTS_CHANNEL, event)
-            .await?;
+        let _: i64 = services(ctx).valkey.publish(EVENTS_CHANNEL, event).await?;
         Ok(true)
     }
 }
@@ -65,13 +50,15 @@ pub struct Ping {
     pub message: String,
 }
 
-pub struct SubscriptionRoot;
+pub struct Subscription;
 
-#[Subscription(name = "Subscription")]
-impl SubscriptionRoot {
-    async fn pings(&self, ctx: &Context<'_>) -> impl Stream<Item = Ping> {
-        let rx = ctx.data_unchecked::<Services>().events.message_rx();
-        futures::stream::unfold(rx, |mut rx| async move {
+#[Subscription]
+impl Subscription {
+    // The viewer is checked when the subscription starts; a session revoked later ends with the socket.
+    async fn pings(&self, ctx: &Context<'_>) -> Result<impl Stream<Item = Ping> + use<>> {
+        require_viewer(ctx)?;
+        let rx = services(ctx).events.message_rx();
+        Ok(futures::stream::unfold(rx, |mut rx| async move {
             loop {
                 match rx.recv().await {
                     Ok(msg) => {
@@ -87,6 +74,6 @@ impl SubscriptionRoot {
                     Err(RecvError::Closed) => return None,
                 }
             }
-        })
+        }))
     }
 }

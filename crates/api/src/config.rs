@@ -19,6 +19,8 @@ pub struct Config {
     pub browser_cdp_url: String,
     pub docker_url: String,
     pub inference_url: String,
+    /// Adds `Secure` to the session cookie. Turn on whenever the app is served over HTTPS.
+    pub cookie_secure: bool,
 }
 
 fn var(name: &str) -> Result<String> {
@@ -49,6 +51,7 @@ impl Config {
             docker_url: var_or("DOCKER_HOST", "tcp://docker-proxy:2375")
                 .replacen("tcp://", "http://", 1),
             inference_url: var_or("INFERENCE_URL", "http://inference:11434"),
+            cookie_secure: var_or("COOKIE_SECURE", "false") == "true",
         })
     }
 }

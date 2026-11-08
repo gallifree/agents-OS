@@ -1,6 +1,9 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { Activity, Info, Settings, type LucideIcon } from "lucide-react";
+import type { Viewer } from "./App";
 import type { Size } from "./windows";
+
+export type AppProps = { viewer: Viewer };
 
 export type AppDef = {
   id: string;
@@ -8,8 +11,10 @@ export type AppDef = {
   titleKey: string;
   icon: LucideIcon;
   defaultSize: Size;
+  /// Hidden from non-admins (the backend enforces access regardless).
+  adminOnly?: boolean;
   // Apps load lazily: heavy ones (editors, canvases, terminals) must not weigh on the shell.
-  component: LazyExoticComponent<ComponentType>;
+  component: LazyExoticComponent<ComponentType<AppProps>>;
 };
 
 export const apps: AppDef[] = [
@@ -18,13 +23,14 @@ export const apps: AppDef[] = [
     titleKey: "apps.system.title",
     icon: Activity,
     defaultSize: { w: 560, h: 520 },
+    adminOnly: true,
     component: lazy(() => import("../apps/System")),
   },
   {
     id: "settings",
     titleKey: "apps.settings.title",
     icon: Settings,
-    defaultSize: { w: 520, h: 380 },
+    defaultSize: { w: 600, h: 520 },
     component: lazy(() => import("../apps/Settings")),
   },
   {

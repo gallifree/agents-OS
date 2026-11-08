@@ -8,7 +8,9 @@
       "close": "Fermer",
       "resize": "Redimensionner",
       "retry": "Réessayer"
-    }
+    },
+    "account": "Compte",
+    "signOut": "Se déconnecter"
   },
   "apps": {
     "settings": {
@@ -20,7 +22,24 @@
         "light": "Clair",
         "dark": "Sombre"
       },
-      "language": "Langue"
+      "language": "Langue",
+      "tabs": {
+        "appearance": "Apparence",
+        "account": "Compte",
+        "users": "Utilisateurs"
+      },
+      "changePassword": "Changer le mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "otherSessionsSignedOut": "Vos autres appareils seront déconnectés.",
+      "passwordChanged": "Mot de passe modifié.",
+      "save": "Enregistrer",
+      "role": "Rôle",
+      "created": "Créé le",
+      "admin": "Administrateur",
+      "newUser": "Nouvel utilisateur",
+      "create": "Créer",
+      "userCreated": "Utilisateur créé."
     },
     "about": {
       "title": "À propos",
@@ -41,5 +60,30 @@
       "sendPing": "Envoyer un ping",
       "noPings": "Envoyez un ping : il passe par Valkey pub/sub et revient par WebSocket."
     }
+  },
+  "auth": {
+    "loginIntro": "Connectez-vous pour continuer.",
+    "setupIntro": "Bienvenue ! Créez le compte administrateur.",
+    "setupCode": "Code d’installation",
+    "setupCodeHint": "Affiché dans les journaux du serveur au démarrage (bin/dev l’affiche).",
+    "username": "Nom d’utilisateur",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "signIn": "Se connecter",
+    "createAdmin": "Créer le compte administrateur"
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "Nom d’utilisateur ou mot de passe incorrect.",
+    "LOCKED_OUT": "Trop de tentatives échouées. Réessayez dans 15 minutes.",
+    "USERNAME_TAKEN": "Ce nom d’utilisateur est déjà pris.",
+    "INVALID_USERNAME": "Nom d’utilisateur : 3 à 32 caractères, lettres, chiffres, « . », « _ » ou « - ».",
+    "INVALID_PASSWORD": "Mot de passe : au moins 8 caractères.",
+    "INVALID_SETUP_CODE": "Code d’installation incorrect.",
+    "SETUP_DONE": "L’installation est déjà faite : connectez-vous.",
+    "PASSWORD_MISMATCH": "Les mots de passe ne correspondent pas.",
+    "UNAUTHENTICATED": "Votre session a expiré. Reconnectez-vous.",
+    "FORBIDDEN": "Réservé aux administrateurs.",
+    "INTERNAL": "Erreur du serveur. Réessayez plus tard.",
+    "NETWORK": "Impossible de joindre le serveur."
   }
 }

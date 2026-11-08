@@ -33,6 +33,15 @@ Guidance for coding agents working in this repository. Read [README.md](./README
 - Decoding an ID only identifies an object; resolvers must still check that the caller may access it.
 - Derive keys from the master key with HKDF, one subkey per purpose, with a version byte. Never reuse a key across purposes and never store the master key in the database.
 
+## Auth
+
+- Sessions: encrypted token in the `session` cookie (`HttpOnly`, `SameSite=Strict`, `Secure` when `COOKIE_SECURE=true`) + a `sessions` row that decides revocation. The HTTP and WebSocket handlers resolve it into a `Viewer` in the GraphQL request data.
+- Every resolver that reads or changes user data starts with `require_viewer(ctx)` or `require_admin(ctx)`. Hiding things in the UI is never the protection.
+- `node(id:)` returns null (not an error) for objects the viewer may not see, so IDs can't be probed.
+- Errors the UI acts on carry `extensions.code` (`coded()` in `graphql/mod.rs`, `AuthError::code`); the UI translates codes (`errors.*` in `web/locales`), never server messages. Infrastructure errors are logged and returned as `INTERNAL`.
+- The first admin is created with the one-time setup code logged at startup while there are no users (`bin/dev` prints it).
+- Auth logic lives in `crates/api/src/auth.rs` and is tested against real Postgres + Valkey containers (`cargo test` needs Docker).
+
 ## Planned layout
 
 Not created yet; follow it when scaffolding:

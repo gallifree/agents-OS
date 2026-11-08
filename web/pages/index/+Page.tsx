@@ -1,5 +1,5 @@
-import { Desktop } from "../../desktop/Desktop";
+import { App } from "../../desktop/App";
 
 export default function Page() {
-  return <Desktop />;
+  return <App />;
 }

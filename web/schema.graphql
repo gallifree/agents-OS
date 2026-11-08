@@ -1,19 +1,98 @@
+"""
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime
+
 type Mutation {
 	"""
 	Publishes a ping on Valkey pub/sub; every `pings` subscriber, on any backend instance, receives it.
 	"""
 	ping(message: String!): Boolean!
+	"""
+	Creates the first admin with the one-time setup code from the server logs, and signs them in.
+	"""
+	setup(code: String!, username: String!, password: String!): User!
+	login(username: String!, password: String!): User!
+	logout: Boolean!
+	"""
+	Also signs out every other session of the user.
+	"""
+	changePassword(current: String!, new: String!): Boolean!
+	"""
+	Sets the given preferences; omitted ones keep their value.
+	"""
+	updatePrefs(theme: String, language: String): User!
+	"""
+	Admins only.
+	"""
+	createUser(username: String!, password: String!, isAdmin: Boolean!): User!
+}
+
+"""
+Relay object identification: `id` is an expiring encrypted token, `cacheKey` the stable client identity.
+"""
+interface Node {
+	id: ID!
+	cacheKey: String!
+}
+
+"""
+Information about pagination in a connection
+"""
+type PageInfo {
+	"""
+	When paginating backwards, are there more items?
+	"""
+	hasPreviousPage: Boolean!
+	"""
+	When paginating forwards, are there more items?
+	"""
+	hasNextPage: Boolean!
+	"""
+	When paginating backwards, the cursor to continue.
+	"""
+	startCursor: String
+	"""
+	When paginating forwards, the cursor to continue.
+	"""
+	endCursor: String
 }
 
 type Ping {
 	message: String!
 }
 
+"""
+UI preferences, stored per user so they follow them across devices.
+"""
+type Prefs {
+	theme: String
+	language: String
+}
+
 type Query {
 	"""
-	State of every backing service.
+	State of every backing service. Admins only: errors expose internal hostnames.
 	"""
 	systemStatus: [ServiceStatus!]!
+	"""
+	True until the first admin is created (see the setup code in the server logs).
+	"""
+	setupRequired: Boolean!
+	"""
+	The signed-in user, or null.
+	"""
+	viewer: User
+	"""
+	Refetches any object by its Relay ID. Returns null for objects the viewer may not see.
+	"""
+	node(id: ID!): Node
+	"""
+	All users, oldest first. Admins only.
+	"""
+	users(after: String, first: Int): UserConnection!
 }
 
 type ServiceStatus {
@@ -32,6 +111,44 @@ type Subscription {
 	pings: Ping!
 }
 
+type User implements Node {
+	id: ID!
+	cacheKey: String!
+	username: String!
+	isAdmin: Boolean!
+	createdAt: DateTime!
+	prefs: Prefs!
+}
+
+type UserConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [UserEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [User!]!
+}
+
+"""
+An edge in a connection.
+"""
+type UserEdge {
+	"""
+	The item at the end of the edge
+	"""
+	node: User!
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+}
+
 """
 Directs the executor to include this field or fragment only when the `if` argument is true.
 """
@@ -40,6 +157,10 @@ directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 Directs the executor to skip this field or fragment when the `if` argument is true.
 """
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Provides a scalar specification URL for specifying the behavior of custom scalar types.
+"""
+directive @specifiedBy(url: String!) on SCALAR
 schema {
 	query: Query
 	mutation: Mutation

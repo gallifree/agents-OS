@@ -8,7 +8,9 @@
       "close": "Close",
       "resize": "Resize",
       "retry": "Retry"
-    }
+    },
+    "account": "Account",
+    "signOut": "Sign out"
   },
   "apps": {
     "settings": {
@@ -20,7 +22,24 @@
         "light": "Light",
         "dark": "Dark"
       },
-      "language": "Language"
+      "language": "Language",
+      "tabs": {
+        "appearance": "Appearance",
+        "account": "Account",
+        "users": "Users"
+      },
+      "changePassword": "Change password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "otherSessionsSignedOut": "Your other devices will be signed out.",
+      "passwordChanged": "Password changed.",
+      "save": "Save",
+      "role": "Role",
+      "created": "Created",
+      "admin": "Administrator",
+      "newUser": "New user",
+      "create": "Create",
+      "userCreated": "User created."
     },
     "about": {
       "title": "About",
@@ -41,5 +60,30 @@
       "sendPing": "Send ping",
       "noPings": "Send a ping: it goes through Valkey pub/sub and comes back over WebSocket."
     }
+  },
+  "auth": {
+    "loginIntro": "Sign in to continue.",
+    "setupIntro": "Welcome! Create the administrator account.",
+    "setupCode": "Setup code",
+    "setupCodeHint": "Printed in the server logs at startup (bin/dev shows it).",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "signIn": "Sign in",
+    "createAdmin": "Create admin account"
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "Wrong username or password.",
+    "LOCKED_OUT": "Too many failed attempts. Try again in 15 minutes.",
+    "USERNAME_TAKEN": "This username is already taken.",
+    "INVALID_USERNAME": "Username: 3–32 characters, letters, digits, \".\", \"_\" or \"-\".",
+    "INVALID_PASSWORD": "Password: at least 8 characters.",
+    "INVALID_SETUP_CODE": "Wrong setup code.",
+    "SETUP_DONE": "Setup is already done: sign in instead.",
+    "PASSWORD_MISMATCH": "The passwords don’t match.",
+    "UNAUTHENTICATED": "Your session has ended. Sign in again.",
+    "FORBIDDEN": "Administrators only.",
+    "INTERNAL": "Server error. Try again later.",
+    "NETWORK": "Can’t reach the server."
   }
 }

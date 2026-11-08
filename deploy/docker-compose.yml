@@ -24,6 +24,7 @@ services:
       BROWSER_CDP_URL: http://browser:9222
       DOCKER_HOST: tcp://docker-proxy:2375
       INFERENCE_URL: ${INFERENCE_URL:-http://inference:11434}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     depends_on:
       postgres: { condition: service_healthy }
       valkey: { condition: service_healthy }

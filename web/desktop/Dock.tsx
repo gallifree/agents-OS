@@ -1,14 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { apps } from "./apps";
+import type { AppDef } from "./apps";
 import type { WmState } from "./windows";
 
 type Props = {
+  apps: AppDef[];
   wm: WmState;
   focused: string | undefined;
   onActivate: (appId: string) => void;
 };
 
-export function Dock({ wm, focused, onActivate }: Props) {
+export function Dock({ apps, wm, focused, onActivate }: Props) {
   const { t } = useTranslation();
   return (
     <nav

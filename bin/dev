@@ -38,6 +38,9 @@ wait_app() {
     sleep 1
   done
   echo "ready → http://localhost:$port"
+  # Only logged while the instance has no users yet.
+  code=$(compose logs app 2>/dev/null | grep -o 'setup code [0-9a-f-]*' | tail -1 | cut -d' ' -f3)
+  if [ -n "$code" ]; then echo "first run → create the admin account with setup code: $code"; fi
 }
 
 case "${1:-up}" in

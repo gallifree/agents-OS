@@ -2,7 +2,7 @@
 
 A self-hosted AI agent platform inspired by [taOS](./taOS), rewritten from scratch with **no Python**: a Rust backend, a React web desktop, and WASM plugins, all shipped with Docker Compose for **x86_64 and arm64**.
 
-> **Status:** milestone 1 done: the Compose stack runs, the desktop shell talks to the Rust backend over GraphQL (Relay) and WebSocket subscriptions, and the crypto core is in place. Next: milestone 2 (login, users, sessions). See [Still open](#still-open).
+> **Status:** milestone 2 done: setup with a one-time code, login/logout, sessions, users (admin), server-side preferences, Relay `node(id:)` with encrypted expiring IDs. Next: milestone 3 (LLM gateway). See [Still open](#still-open).
 
 ## Stack
 
