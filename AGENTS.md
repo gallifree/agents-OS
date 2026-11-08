@@ -71,6 +71,7 @@ cargo deny check                      # needs: cargo install cargo-deny
 corepack pnpm install
 corepack pnpm dev                     # Vite dev server
 corepack pnpm build                   # SPA → web/dist/client (prerendered index.html)
+corepack pnpm test                    # vitest
 
 # Full stack, for testing (from the repo root)
 bin/dev                               # creates deploy/.env with fresh secrets if missing, builds, starts, waits

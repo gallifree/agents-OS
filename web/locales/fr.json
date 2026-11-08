@@ -1,0 +1,29 @@
+{
+  "desktop": {
+    "dock": "Dock",
+    "window": {
+      "minimize": "Réduire",
+      "maximize": "Agrandir",
+      "restore": "Restaurer",
+      "close": "Fermer",
+      "resize": "Redimensionner"
+    }
+  },
+  "apps": {
+    "settings": {
+      "title": "Paramètres",
+      "appearance": "Apparence",
+      "theme": "Thème",
+      "themes": { "system": "Système", "light": "Clair", "dark": "Sombre" },
+      "language": "Langue"
+    },
+    "about": {
+      "title": "À propos",
+      "tagline": "Plateforme d'agents IA auto-hébergée",
+      "backend": "Backend",
+      "online": "en ligne",
+      "offline": "hors ligne",
+      "checking": "vérification…"
+    }
+  }
+}

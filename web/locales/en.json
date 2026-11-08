@@ -1,0 +1,29 @@
+{
+  "desktop": {
+    "dock": "Dock",
+    "window": {
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "restore": "Restore",
+      "close": "Close",
+      "resize": "Resize"
+    }
+  },
+  "apps": {
+    "settings": {
+      "title": "Settings",
+      "appearance": "Appearance",
+      "theme": "Theme",
+      "themes": { "system": "System", "light": "Light", "dark": "Dark" },
+      "language": "Language"
+    },
+    "about": {
+      "title": "About",
+      "tagline": "Self-hosted AI agent platform",
+      "backend": "Backend",
+      "online": "online",
+      "offline": "offline",
+      "checking": "checking…"
+    }
+  }
+}
