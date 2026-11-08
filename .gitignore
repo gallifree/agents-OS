@@ -1,0 +1,5 @@
+/target
+/taOS
+deploy/.env
+web/node_modules
+web/dist
