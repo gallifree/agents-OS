@@ -29,6 +29,10 @@ services:
       valkey: { condition: service_healthy }
       typesense: { condition: service_healthy }
       garage-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "/app/api", "health"]
+      interval: 10s
+      retries: 6
     restart: unless-stopped
 
   postgres:
