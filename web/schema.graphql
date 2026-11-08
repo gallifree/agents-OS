@@ -1,0 +1,47 @@
+type Mutation {
+	"""
+	Publishes a ping on Valkey pub/sub; every `pings` subscriber, on any backend instance, receives it.
+	"""
+	ping(message: String!): Boolean!
+}
+
+type Ping {
+	message: String!
+}
+
+type Query {
+	"""
+	State of every backing service.
+	"""
+	systemStatus: [ServiceStatus!]!
+}
+
+type ServiceStatus {
+	name: String!
+	ok: Boolean!
+	"""
+	Optional services (e.g. inference running on the host) may be absent.
+	"""
+	optional: Boolean!
+	version: String
+	latencyMs: Int!
+	error: String
+}
+
+type Subscription {
+	pings: Ping!
+}
+
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true.
+"""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Directs the executor to skip this field or fragment when the `if` argument is true.
+"""
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+schema {
+	query: Query
+	mutation: Mutation
+	subscription: Subscription
+}

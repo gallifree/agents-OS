@@ -3,7 +3,7 @@ mod graphql;
 mod services;
 
 use anyhow::Result;
-use async_graphql_axum::GraphQL;
+use async_graphql_axum::{GraphQL, GraphQLSubscription};
 use axum::{
     Router,
     routing::{get, post_service},
@@ -19,12 +19,7 @@ async fn main() -> Result<()> {
         None | Some("serve") => serve().await,
         Some("health") => health().await,
         Some("schema") => {
-            print!(
-                "{}",
-                graphql::AppSchema::build(graphql::Query, Default::default(), Default::default())
-                    .finish()
-                    .sdl()
-            );
+            print!("{}", graphql::sdl());
             Ok(())
         }
         Some(_) => {
@@ -46,7 +41,12 @@ async fn serve() -> Result<()> {
     let spa = ServeDir::new(&web_dir).fallback(ServeFile::new(format!("{web_dir}/index.html")));
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
-        .route("/graphql", post_service(GraphQL::new(schema)))
+        // POST: queries and mutations; GET: WebSocket subscriptions (graphql-transport-ws).
+        .route(
+            "/graphql",
+            post_service(GraphQL::new(schema.clone()))
+                .get_service(GraphQLSubscription::new(schema)),
+        )
         .fallback_service(spa);
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;

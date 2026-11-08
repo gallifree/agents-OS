@@ -40,7 +40,8 @@ Not created yet; follow it when scaffolding:
 ```
 crates/
   api/        axum + async-graphql, REST machine APIs
-  core/       domain types, auth, channels
+  crypto/     master key, sealed tokens, Relay IDs, cacheKey (exists)
+  core/       domain types, auth, channels (name it e.g. `domain`: `core` clashes with Rust's core crate)
   gateway/    LLM router (OpenAI-compatible)
   memory/     taOSmd rewrite (embeddings, rerank, knowledge graph)
   plugins/    Extism host + host functions
@@ -52,7 +53,8 @@ deploy/       docker-compose.yml, garage-init, .env.example
 ## Conventions
 
 - Rust: stable toolchain, `cargo fmt` + `cargo clippy -- -D warnings`, `sqlx` migrations in `crates/api/migrations` (or wherever the scaffold puts them; keep a single location).
-- GraphQL is code-first (`async-graphql` derives); export the SDL and generate typed frontend hooks with `graphql-codegen`.
+- GraphQL is code-first (`async-graphql` derives). After any schema change run `corepack pnpm schema` (from web/) and commit `web/schema.graphql`. The frontend uses Relay: operations live next to their component in `graphql` tags, compiled by `relay-compiler` (run by `dev`/`build`) and transformed by `vite-plugin-relay-lite` (no Babel). Operation names follow Relay's `<FileName><Name>Query` rule.
+- Every window content renders inside an error boundary + Suspense (`desktop/Window.tsx`), so apps can use `useLazyLoadQuery` directly.
 - Frontend: every user-facing string goes through i18next; backend errors return codes, not text. Respect `prefers-reduced-motion` with Motion. Heavy apps load lazily via dynamic `import()`.
 - Tests: `testcontainers` for Postgres/Valkey/Typesense integration tests, Playwright for end-to-end tests.
 
@@ -72,6 +74,8 @@ corepack pnpm install
 corepack pnpm dev                     # Vite dev server
 corepack pnpm build                   # SPA → web/dist/client (prerendered index.html)
 corepack pnpm test                    # vitest
+corepack pnpm schema                  # regenerate schema.graphql from the Rust schema
+corepack pnpm relay                   # run the Relay compiler alone
 
 # Full stack, for testing (from the repo root)
 bin/dev                               # creates deploy/.env with fresh secrets if missing, builds, starts, waits
@@ -82,5 +86,8 @@ bin/dev logs [service] | ps | down | reset   # reset wipes data volumes, keeps .
 
 - Chrome's CDP HTTP endpoints reject a `Host` header that isn't an IP or `localhost`: send `Host: localhost`, then rewrite the returned `ws://localhost/...` URL to `browser:9222`.
 - The Typesense image has no curl/wget; its health check uses bash `/dev/tcp`.
+- `graphql` (npm) is pinned to 16: `vite-plugin-relay-lite` only supports 15–16. The plugin also declares Vite ≤ 7 but works with Vite 8 (build verified); recheck on upgrades.
+- reqwest, sqlx and object_store must all use rustls with the **aws-lc-rs** provider; two rustls crypto providers in one binary panic at runtime. Check with `cargo tree -e features -i rustls`.
+- The Docker builder and runtime images must use the same Debian release (glibc).
 - Garage's image has no shell; `garage-init` runs `deploy/garage/init.sh` from a curl image against the v2 admin API. It is idempotent.
 - Postgres keeps the password from its first start: changing `POSTGRES_PASSWORD` later needs `docker compose down -v` (wipes data) or an `ALTER USER`.

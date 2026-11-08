@@ -2,7 +2,7 @@ use std::{future::Future, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use async_graphql::SimpleObject;
-use fred::prelude::*;
+use fred::{clients::SubscriberClient, prelude::*};
 use object_store::{ObjectStore, ObjectStoreExt, aws::AmazonS3Builder, path::Path};
 use serde_json::Value;
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -13,6 +13,8 @@ use crypto::Keys;
 use crate::config::Config;
 
 const CHECK_TIMEOUT: Duration = Duration::from_secs(3);
+/// Valkey pub/sub channel that fans events out to every backend instance.
+pub const EVENTS_CHANNEL: &str = "events";
 
 /// Connections to every backing service. Cheap to clone.
 #[derive(Clone)]
@@ -20,6 +22,8 @@ pub struct Services {
     pub cfg: Arc<Config>,
     pub pg: PgPool,
     pub valkey: Client,
+    /// Subscribed to `EVENTS_CHANNEL`; GraphQL subscriptions read from `events.message_rx()`.
+    pub events: SubscriberClient,
     pub s3: Arc<dyn ObjectStore>,
     pub http: reqwest::Client,
 }
@@ -35,10 +39,22 @@ impl Services {
             .acquire_timeout(CHECK_TIMEOUT)
             .connect_lazy(&cfg.database_url)?;
 
-        let valkey = Builder::from_config(fred::types::config::Config::from_url(&cfg.valkey_url)?)
-            .set_policy(ReconnectPolicy::new_exponential(0, 100, 5_000, 2))
-            .build()?;
+        let mut builder =
+            Builder::from_config(fred::types::config::Config::from_url(&cfg.valkey_url)?);
+        builder.set_policy(ReconnectPolicy::new_exponential(0, 100, 5_000, 2));
+        let valkey = builder.build()?;
         valkey.connect();
+
+        // Pub/sub needs its own connection; it re-subscribes by itself after a reconnect.
+        let events = builder.build_subscriber_client()?;
+        events.connect();
+        events.manage_subscriptions();
+        let sub = events.clone();
+        tokio::spawn(async move {
+            if let Err(e) = sub.subscribe(EVENTS_CHANNEL).await {
+                tracing::error!("valkey subscribe to {EVENTS_CHANNEL} failed: {e}");
+            }
+        });
 
         let mut s3 = AmazonS3Builder::new()
             .with_region(&cfg.s3_region)
@@ -55,6 +71,7 @@ impl Services {
             cfg: Arc::new(cfg),
             pg,
             valkey,
+            events,
             s3: Arc::new(s3.build()?),
             http: reqwest::Client::builder().timeout(CHECK_TIMEOUT).build()?,
         })

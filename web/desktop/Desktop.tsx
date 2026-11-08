@@ -2,6 +2,8 @@ import "../i18n";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { RelayEnvironmentProvider } from "react-relay";
+import { environment } from "../relay/environment";
 import { appById } from "./apps";
 import { Dock } from "./Dock";
 import { applyTheme, savedTheme } from "./prefs";
@@ -35,31 +37,33 @@ export function Desktop() {
   };
 
   return (
-    // reducedMotion="user": animations are skipped when the OS asks for reduced motion.
-    <MotionConfig reducedMotion="user">
-      <div className="fixed inset-0 flex flex-col bg-linear-to-br from-base-300 via-base-200 to-base-300 text-base-content">
-        <TopBar title={focusedApp && t(focusedApp.titleKey)} />
-        <div ref={area} className="relative flex-1 overflow-hidden">
-          <AnimatePresence>
-            {wm.windows.map((win) => {
-              const app = appById(win.appId)!;
-              return (
-                <Window
-                  key={win.id}
-                  win={win}
-                  title={t(app.titleKey)}
-                  focused={win.id === focused}
-                  viewport={viewport}
-                  dispatch={dispatch}
-                >
-                  <app.component />
-                </Window>
-              );
-            })}
-          </AnimatePresence>
+    <RelayEnvironmentProvider environment={environment}>
+      {/* reducedMotion="user": animations are skipped when the OS asks for reduced motion. */}
+      <MotionConfig reducedMotion="user">
+        <div className="fixed inset-0 flex flex-col bg-linear-to-br from-base-300 via-base-200 to-base-300 text-base-content">
+          <TopBar title={focusedApp && t(focusedApp.titleKey)} />
+          <div ref={area} className="relative flex-1 overflow-hidden">
+            <AnimatePresence>
+              {wm.windows.map((win) => {
+                const app = appById(win.appId)!;
+                return (
+                  <Window
+                    key={win.id}
+                    win={win}
+                    title={t(app.titleKey)}
+                    focused={win.id === focused}
+                    viewport={viewport}
+                    dispatch={dispatch}
+                  >
+                    <app.component />
+                  </Window>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+          <Dock wm={wm} focused={focused} onActivate={activate} />
         </div>
-        <Dock wm={wm} focused={focused} onActivate={activate} />
-      </div>
-    </MotionConfig>
+      </MotionConfig>
+    </RelayEnvironmentProvider>
   );
 }

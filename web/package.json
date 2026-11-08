@@ -1,18 +1,23 @@
 {
   "name": "web",
   "scripts": {
-    "dev": "vike dev",
-    "build": "vike build",
+    "dev": "relay-compiler && vike dev",
+    "build": "relay-compiler && vike build",
     "preview": "vike build && vike preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "relay": "relay-compiler",
+    "schema": "cargo run -q -p api -- schema > schema.graphql"
   },
   "dependencies": {
+    "graphql-ws": "^6.4.1",
     "i18next": "^27.0.1",
     "lucide-react": "^1.70.0",
     "motion": "^14.10.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-i18next": "^18.0.0",
+    "react-relay": "^21.0.1",
+    "relay-runtime": "^21.0.1",
     "vike": "^0.4.270",
     "vike-react": "^0.6.32"
   },
@@ -20,11 +25,16 @@
     "@tailwindcss/vite": "^4.3.4",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/react-relay": "^18.2.1",
+    "@types/relay-runtime": "^20.1.1",
     "@vitejs/plugin-react": "^6.2.1",
     "daisyui": "^5.7.50",
+    "graphql": "^16.15.0",
+    "relay-compiler": "^21.0.1",
     "tailwindcss": "^4.3.4",
     "typescript": "^6.0.3",
     "vite": "^8.3.6",
+    "vite-plugin-relay-lite": "^0.12.0",
     "vitest": "^5.1.0"
   },
   "type": "module"

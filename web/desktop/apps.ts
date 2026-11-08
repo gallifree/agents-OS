@@ -1,5 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { Info, Settings, type LucideIcon } from "lucide-react";
+import { Activity, Info, Settings, type LucideIcon } from "lucide-react";
 import type { Size } from "./windows";
 
 export type AppDef = {
@@ -13,6 +13,13 @@ export type AppDef = {
 };
 
 export const apps: AppDef[] = [
+  {
+    id: "system",
+    titleKey: "apps.system.title",
+    icon: Activity,
+    defaultSize: { w: 560, h: 520 },
+    component: lazy(() => import("../apps/System")),
+  },
   {
     id: "settings",
     titleKey: "apps.settings.title",

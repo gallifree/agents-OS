@@ -6,7 +6,8 @@
       "maximize": "Maximize",
       "restore": "Restore",
       "close": "Close",
-      "resize": "Resize"
+      "resize": "Resize",
+      "retry": "Retry"
     }
   },
   "apps": {
@@ -14,7 +15,11 @@
       "title": "Settings",
       "appearance": "Appearance",
       "theme": "Theme",
-      "themes": { "system": "System", "light": "Light", "dark": "Dark" },
+      "themes": {
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark"
+      },
       "language": "Language"
     },
     "about": {
@@ -24,6 +29,17 @@
       "online": "online",
       "offline": "offline",
       "checking": "checking…"
+    },
+    "system": {
+      "title": "System",
+      "services": "Services",
+      "refresh": "Refresh",
+      "up": "up",
+      "down": "down",
+      "absent": "absent",
+      "realtime": "Real time",
+      "sendPing": "Send ping",
+      "noPings": "Send a ping: it goes through Valkey pub/sub and comes back over WebSocket."
     }
   }
 }

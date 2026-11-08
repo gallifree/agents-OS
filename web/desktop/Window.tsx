@@ -1,7 +1,8 @@
-import { Suspense, useRef, type Dispatch, type PointerEvent, type ReactNode } from "react";
+import { Component, Suspense, useRef, type Dispatch, type PointerEvent, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import i18n from "../i18n";
 import type { Bounds, Size, Win, WmAction } from "./windows";
 
 // Below Tailwind's `sm` breakpoint windows are full screen and can't be dragged (CSS in className below).
@@ -99,7 +100,9 @@ export function Window({ win, title, focused, viewport, dispatch, children }: Pr
       </header>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <Suspense fallback={<span className="loading loading-spinner m-6" />}>{children}</Suspense>
+        <AppErrorBoundary>
+          <Suspense fallback={<span className="loading loading-spinner m-6" />}>{children}</Suspense>
+        </AppErrorBoundary>
       </div>
 
       {!maximized && (
@@ -116,4 +119,23 @@ export function Window({ win, title, focused, viewport, dispatch, children }: Pr
       )}
     </motion.section>
   );
+}
+
+/** A crashing app (or a failed query) only takes down its own window, not the desktop. */
+class AppErrorBoundary extends Component<{ children: ReactNode }, { error?: Error }> {
+  state: { error?: Error } = {};
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div role="alert" className="alert alert-error alert-soft m-4">
+        <span>{this.state.error.message}</span>
+        <button className="btn btn-sm" onClick={() => this.setState({ error: undefined })}>
+          {i18n.t("desktop.window.retry")}
+        </button>
+      </div>
+    );
+  }
 }
