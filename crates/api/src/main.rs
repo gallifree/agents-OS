@@ -1,7 +1,9 @@
 mod auth;
 mod config;
+mod events;
 mod gateway;
 mod graphql;
+mod runtime;
 mod services;
 
 use anyhow::Result;
@@ -66,6 +68,8 @@ async fn serve() -> Result<()> {
         );
         *services.setup_code.lock().expect("setup code lock") = Some(shown);
     }
+
+    runtime::spawn(services.clone());
 
     let state = AppState {
         schema: graphql::schema(services.clone()),

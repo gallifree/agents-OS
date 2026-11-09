@@ -80,7 +80,7 @@ pub struct ApiKey {
 }
 
 #[derive(FromRow)]
-struct ApiKeyRow {
+pub(super) struct ApiKeyRow {
     id: Uuid,
     name: String,
     created_at: DateTime<Utc>,
@@ -88,7 +88,7 @@ struct ApiKeyRow {
 }
 
 impl ApiKey {
-    fn from_row(row: ApiKeyRow, keys: &Keys) -> Self {
+    pub(super) fn from_row(row: ApiKeyRow, keys: &Keys) -> Self {
         Self {
             id: ID(keys.encode_id("ApiKey", row.id, ID_TTL)),
             cache_key: keys.cache_key("ApiKey", row.id),
@@ -139,13 +139,17 @@ pub struct ModelUsage {
 
 // ---- Validation -----------------------------------------------------------------------------
 
-fn validate_name(name: &str) -> Result<()> {
-    let ok = (1..=32).contains(&name.len())
+/// Lowercase handle: provider names, agent names (@mentions).
+pub(super) fn validate_handle(name: &str) -> bool {
+    (1..=32).contains(&name.len())
         && name
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'_')
-        && !name.starts_with(['-', '_']);
-    ok.then_some(()).ok_or_else(|| {
+        && !name.starts_with(['-', '_'])
+}
+
+fn validate_name(name: &str) -> Result<()> {
+    validate_handle(name).then_some(()).ok_or_else(|| {
         coded(
             "INVALID_PROVIDER_NAME",
             "1–32 characters: a-z, 0-9, '-' or '_'",
@@ -229,7 +233,7 @@ impl LlmQuery {
         let s = services(ctx);
         let rows: Vec<ApiKeyRow> = sqlx::query_as(
             "SELECT id, name, created_at, last_used_at FROM api_keys
-             WHERE user_id = $1 AND revoked_at IS NULL ORDER BY id",
+             WHERE user_id = $1 AND agent_id IS NULL AND revoked_at IS NULL ORDER BY id",
         )
         .bind(viewer.user_id)
         .fetch_all(&s.pg)

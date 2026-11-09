@@ -1,4 +1,32 @@
 """
+An AI agent. Every user can see agents and add them to channels; their creator and admins edit them.
+"""
+type Agent implements Node {
+	id: ID!
+	cacheKey: String!
+	"""
+	Handle used for @mentions.
+	"""
+	name: String!
+	"""
+	Gateway model, `"<provider>/<model>"`.
+	"""
+	model: String!
+	systemPrompt: String!
+	canEdit: Boolean!
+	createdAt: DateTime!
+	"""
+	The agent's `/v1` tokens. Empty for viewers who can't edit the agent.
+	"""
+	tokens: [ApiKey!]!
+}
+
+type AgentTyping {
+	agent: String!
+	typing: Boolean!
+}
+
+"""
 A bearer token for `/v1`. Only its hash is stored.
 """
 type ApiKey implements Node {
@@ -7,6 +35,28 @@ type ApiKey implements Node {
 	name: String!
 	createdAt: DateTime!
 	lastUsedAt: DateTime
+}
+
+enum AuthorKind {
+	USER
+	AGENT
+}
+
+"""
+A conversation between users and agents. Shared with every user, or private to its creator.
+"""
+type Channel implements Node {
+	id: ID!
+	cacheKey: String!
+	name: String!
+	private: Boolean!
+	canEdit: Boolean!
+	createdAt: DateTime!
+	agents: [Agent!]!
+	"""
+	Oldest first. Page backwards from the newest with `last` / `before`.
+	"""
+	messages(before: String, last: Int): MessageConnection!
 }
 
 type CreatedApiKey {
@@ -23,6 +73,49 @@ Implement the DateTime<Utc> scalar
 The input/output is a string in RFC3339 format.
 """
 scalar DateTime
+
+type Message implements Node {
+	id: ID!
+	cacheKey: String!
+	authorName: String!
+	authorKind: AuthorKind!
+	fromViewer: Boolean!
+	content: String!
+	"""
+	A failed agent reply; `content` holds the reason.
+	"""
+	isError: Boolean!
+	createdAt: DateTime!
+}
+
+type MessageConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [MessageEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [Message!]!
+}
+
+"""
+An edge in a connection.
+"""
+type MessageEdge {
+	"""
+	The item at the end of the edge
+	"""
+	node: Message!
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+}
 
 """
 Requests per provider and model over a period.
@@ -82,6 +175,33 @@ type Mutation {
 	Revokes one of the viewer's own keys; takes effect on the next request.
 	"""
 	revokeApiKey(id: ID!): Boolean!
+	createAgent(name: String!, model: String!, systemPrompt: String! = ""): Agent!
+	"""
+	Omitted fields keep their value.
+	"""
+	updateAgent(id: ID!, model: String, systemPrompt: String): Agent!
+	"""
+	Also revokes its tokens and removes it from channels; its messages stay.
+	"""
+	deleteAgent(id: ID!): Boolean!
+	"""
+	A `/v1` token that acts as the agent: limited to its model, usage counted for it.
+	Returned this once only; revoke it with `revokeApiKey`.
+	"""
+	createAgentToken(agentId: ID!, name: String!): CreatedApiKey!
+	createChannel(name: String!, private: Boolean! = false, agentIds: [ID!]! = []): Channel!
+	"""
+	Omitted fields keep their value; `agentIds` replaces the channel's agents.
+	"""
+	updateChannel(id: ID!, name: String, agentIds: [ID!]): Channel!
+	"""
+	Deletes the channel and its messages.
+	"""
+	deleteChannel(id: ID!): Boolean!
+	"""
+	Posts as the viewer; the channel's only agent, or the @mentioned ones, will answer.
+	"""
+	postMessage(channelId: ID!, content: String!): Message!
 }
 
 """
@@ -179,6 +299,15 @@ type Query {
 	Usage over the last `days` days (1–365): everyone's for admins, the viewer's own otherwise.
 	"""
 	llmUsage(days: Int! = 30): [ModelUsage!]!
+	agents: [Agent!]!
+	"""
+	Models agents can use, `"<provider>/<model>"`, from every enabled provider.
+	"""
+	availableModels: [String!]!
+	"""
+	The channels the viewer can see, by name.
+	"""
+	channels: [Channel!]!
 }
 
 type ServiceStatus {
@@ -195,6 +324,14 @@ type ServiceStatus {
 
 type Subscription {
 	pings: Ping!
+	"""
+	New messages in a channel the viewer can see (checked when the subscription starts).
+	"""
+	messagePosted(channelId: ID!): Message!
+	"""
+	Agents starting and finishing a reply in a channel the viewer can see.
+	"""
+	agentTyping(channelId: ID!): AgentTyping!
 }
 
 type User implements Node {

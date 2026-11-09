@@ -8,6 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use anyhow::Context as _;
 use axum::{
     Json, Router,
     body::{Body, Bytes},
@@ -73,6 +74,8 @@ pub fn hash_token(token: &str) -> Vec<u8> {
 struct Caller {
     user_id: Uuid,
     key_id: Uuid,
+    /// Agent tokens: the agent, and the only model it may use.
+    agent: Option<(Uuid, String)>,
 }
 
 #[expect(
@@ -88,16 +91,21 @@ async fn caller(s: &Services, headers: &HeaderMap) -> Result<Caller, Response> {
     let Some(token) = token else {
         return Err(invalid_key());
     };
-    let row: Option<(Uuid, Uuid)> = sqlx::query_as(
-        "UPDATE api_keys SET last_used_at = now()
-         WHERE token_hash = $1 AND revoked_at IS NULL RETURNING id, user_id",
+    let row: Option<(Uuid, Uuid, Option<Uuid>, Option<String>)> = sqlx::query_as(
+        "UPDATE api_keys k SET last_used_at = now()
+         WHERE token_hash = $1 AND revoked_at IS NULL
+         RETURNING k.id, k.user_id, k.agent_id, (SELECT model FROM agents a WHERE a.id = k.agent_id)",
     )
     .bind(hash_token(token))
     .fetch_optional(&s.pg)
     .await
     .map_err(internal)?;
-    row.map(|(key_id, user_id)| Caller { user_id, key_id })
-        .ok_or_else(invalid_key)
+    row.map(|(key_id, user_id, agent_id, model)| Caller {
+        user_id,
+        key_id,
+        agent: agent_id.zip(model),
+    })
+    .ok_or_else(invalid_key)
 }
 
 // ---- Providers ------------------------------------------------------------------------------
@@ -184,10 +192,17 @@ impl Upstream {
 
 async fn models(State(st): State<AppState>, headers: HeaderMap) -> Response {
     let s = &st.services;
-    if let Err(r) = caller(s, &headers).await {
-        return r;
-    }
+    let caller = match caller(s, &headers).await {
+        Ok(c) => c,
+        Err(r) => return r,
+    };
     match list_models(s).await {
+        Ok(Value::Array(mut data)) => {
+            if let Some((_, model)) = &caller.agent {
+                data.retain(|m| m["id"].as_str() == Some(model.as_str()));
+            }
+            Json(json!({ "object": "list", "data": data })).into_response()
+        }
         Ok(data) => Json(json!({ "object": "list", "data": data })).into_response(),
         Err(e) => internal(e),
     }
@@ -195,7 +210,7 @@ async fn models(State(st): State<AppState>, headers: HeaderMap) -> Response {
 
 /// Every enabled provider's models, prefixed with the provider name. Cached briefly in Valkey
 /// (TTL'd, so evictable); provider mutations delete the cache.
-async fn list_models(s: &Services) -> anyhow::Result<Value> {
+pub async fn list_models(s: &Services) -> anyhow::Result<Value> {
     if let Ok(Some(cached)) = s.valkey.get::<Option<String>, _>(MODELS_CACHE_KEY).await
         && let Ok(v) = serde_json::from_str(&cached)
     {
@@ -256,6 +271,15 @@ async fn forward(
             "the body must be a JSON object",
         );
     };
+    if let Some((_, allowed)) = &caller.agent
+        && req.get("model").and_then(Value::as_str) != Some(allowed.as_str())
+    {
+        return error(
+            StatusCode::FORBIDDEN,
+            "model_not_allowed",
+            "this agent token may only use its agent's model",
+        );
+    }
     let Some((provider, model)) = req
         .get("model")
         .and_then(Value::as_str)
@@ -293,8 +317,9 @@ async fn forward(
     }
 
     let usage = UsageRecord {
-        user_id: caller.user_id,
-        key_id: caller.key_id,
+        user_id: Some(caller.user_id),
+        key_id: Some(caller.key_id),
+        agent_id: caller.agent.map(|(id, _)| id),
         provider_id: up.id,
         provider,
         model,
@@ -358,6 +383,57 @@ async fn forward(
     }
 }
 
+/// One non-streamed chat completion for an in-process agent, metered like `/v1` calls. Error messages are
+/// shown in the channel, so they never include upstream bodies or URLs.
+pub async fn complete(
+    s: &Services,
+    model: &str,
+    messages: Value,
+    user_id: Option<Uuid>,
+    agent_id: Uuid,
+) -> anyhow::Result<String> {
+    let (provider, model) =
+        split_model(model).context("the agent's model must be \"<provider>/<model>\"")?;
+    let up = upstreams(s, Some(provider))
+        .await?
+        .pop()
+        .with_context(|| format!("provider \"{provider}\" is unknown or disabled"))?;
+    let usage = UsageRecord {
+        user_id,
+        key_id: None,
+        agent_id: Some(agent_id),
+        provider_id: up.id,
+        provider: provider.to_owned(),
+        model: model.to_owned(),
+        endpoint: "chat/completions",
+        started: Instant::now(),
+    };
+    let sent = up
+        .request(s, Method::POST, "chat/completions")
+        .json(&json!({ "model": model, "messages": messages }))
+        .send()
+        .await;
+    let resp = match sent {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::warn!("llm provider {}: {e}", up.name);
+            usage.record(s, StatusCode::BAD_GATEWAY, None);
+            anyhow::bail!("provider \"{provider}\" could not be reached");
+        }
+    };
+    let status = resp.status();
+    let body: Value = resp.json().await.unwrap_or_default();
+    usage.record(s, status, Tokens::from_usage(&body["usage"]));
+    if !status.is_success() {
+        tracing::warn!("llm provider {}: {status}: {body}", up.name);
+        anyhow::bail!("provider \"{provider}\" answered {status}");
+    }
+    body["choices"][0]["message"]["content"]
+        .as_str()
+        .map(str::to_owned)
+        .context("the provider's answer had no message")
+}
+
 // ---- Usage ----------------------------------------------------------------------------------
 
 #[derive(Debug, PartialEq)]
@@ -378,8 +454,9 @@ impl Tokens {
 }
 
 struct UsageRecord {
-    user_id: Uuid,
-    key_id: Uuid,
+    user_id: Option<Uuid>,
+    key_id: Option<Uuid>,
+    agent_id: Option<Uuid>,
     provider_id: Uuid,
     provider: String,
     model: String,
@@ -399,8 +476,8 @@ impl UsageRecord {
         tokio::spawn(async move {
             let inserted = sqlx::query(
                 "INSERT INTO llm_usage (user_id, api_key_id, provider_id, provider, model, endpoint, status,
-                                        prompt_tokens, completion_tokens, duration_ms)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+                                        prompt_tokens, completion_tokens, duration_ms, agent_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
             )
             .bind(self.user_id)
             .bind(self.key_id)
@@ -412,6 +489,7 @@ impl UsageRecord {
             .bind(tokens.prompt)
             .bind(tokens.completion)
             .bind(ms)
+            .bind(self.agent_id)
             .execute(&pg)
             .await;
             if let Err(e) = inserted {

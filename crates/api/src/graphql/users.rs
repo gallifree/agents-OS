@@ -9,7 +9,7 @@ use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
 use super::{
-    ID_TTL, Node, auth_error, coded, decode_id, internal, llm, require_admin, require_viewer,
+    ID_TTL, Node, auth_error, chat, coded, decode_id, internal, llm, require_admin, require_viewer,
     services,
 };
 use crate::auth;
@@ -109,6 +109,13 @@ impl UsersQuery {
             "Provider" if viewer.is_admin => Ok(llm::load_provider(&s.pg, &s.keys, uuid)
                 .await?
                 .map(Node::Provider)),
+            "Agent" => Ok(chat::load_agent(s, &viewer, uuid).await?.map(Node::Agent)),
+            "Channel" => Ok(chat::load_channel(s, &viewer, uuid)
+                .await?
+                .map(Node::Channel)),
+            "Message" => Ok(chat::load_message(s, &viewer, uuid)
+                .await?
+                .map(Node::Message)),
             "ApiKey" => Ok(llm::load_api_key(&s.pg, &s.keys, viewer.user_id, uuid)
                 .await?
                 .map(Node::ApiKey)),

@@ -29,6 +29,8 @@ pub struct Services {
     pub setup_code: Arc<Mutex<Option<String>>>,
     pub pg: PgPool,
     pub valkey: Client,
+    /// Dedicated to the agent runtime's blocking stream reads.
+    pub jobs: Client,
     /// Subscribed to `EVENTS_CHANNEL`; GraphQL subscriptions read from `events.message_rx()`.
     pub events: SubscriberClient,
     pub s3: Arc<dyn ObjectStore>,
@@ -53,6 +55,8 @@ impl Services {
         builder.set_policy(ReconnectPolicy::new_exponential(0, 100, 5_000, 2));
         let valkey = builder.build()?;
         valkey.connect();
+        let jobs = builder.build()?;
+        jobs.connect();
 
         // Pub/sub needs its own connection; it re-subscribes by itself after a reconnect.
         let events = builder.build_subscriber_client()?;
@@ -82,6 +86,7 @@ impl Services {
             cfg: Arc::new(cfg),
             pg,
             valkey,
+            jobs,
             events,
             s3: Arc::new(s3.build()?),
             http: reqwest::Client::builder().timeout(CHECK_TIMEOUT).build()?,

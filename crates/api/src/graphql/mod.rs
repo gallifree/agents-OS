@@ -1,10 +1,14 @@
+mod chat;
 mod llm;
 mod system;
 mod users;
 
 use std::time::Duration;
 
-use async_graphql::{Context, Error, ErrorExtensions, ID, Interface, MergedObject, Result, Schema};
+use async_graphql::{
+    Context, Error, ErrorExtensions, ID, Interface, MergedObject, MergedSubscription, Result,
+    Schema,
+};
 use crypto::{Keys, TokenError};
 use uuid::Uuid;
 
@@ -17,28 +21,45 @@ use crate::{
 pub const ID_TTL: Duration = Duration::from_secs(24 * 3600);
 
 #[derive(MergedObject, Default)]
-pub struct Query(system::SystemQuery, users::UsersQuery, llm::LlmQuery);
+pub struct Query(
+    system::SystemQuery,
+    users::UsersQuery,
+    llm::LlmQuery,
+    chat::ChatQuery,
+);
 
 #[derive(MergedObject, Default)]
 pub struct Mutation(
     system::SystemMutation,
     users::UsersMutation,
     llm::LlmMutation,
+    chat::ChatMutation,
 );
 
-pub type AppSchema = Schema<Query, Mutation, system::Subscription>;
+#[derive(MergedSubscription, Default)]
+pub struct Subscription(system::SystemSubscription, chat::ChatSubscription);
+
+pub type AppSchema = Schema<Query, Mutation, Subscription>;
 
 pub fn schema(services: Services) -> AppSchema {
-    Schema::build(Query::default(), Mutation::default(), system::Subscription)
-        .data(services)
-        .finish()
+    Schema::build(
+        Query::default(),
+        Mutation::default(),
+        Subscription::default(),
+    )
+    .data(services)
+    .finish()
 }
 
 /// SDL for frontend codegen (`api schema`).
 pub fn sdl() -> String {
-    Schema::build(Query::default(), Mutation::default(), system::Subscription)
-        .finish()
-        .sdl()
+    Schema::build(
+        Query::default(),
+        Mutation::default(),
+        Subscription::default(),
+    )
+    .finish()
+    .sdl()
 }
 
 fn services<'a>(ctx: &Context<'a>) -> &'a Services {
@@ -86,6 +107,9 @@ pub enum Node {
     User(users::User),
     Provider(llm::Provider),
     ApiKey(llm::ApiKey),
+    Agent(chat::Agent),
+    Channel(chat::Channel),
+    Message(chat::Message),
 }
 
 /// Decodes a client ID, mapping failures to the codes the UI handles.

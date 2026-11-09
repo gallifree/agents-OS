@@ -1,5 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { Activity, BrainCircuit, Info, Settings, type LucideIcon } from "lucide-react";
+import { Activity, Bot, BrainCircuit, Info, MessagesSquare, Settings, type LucideIcon } from "lucide-react";
 import type { Viewer } from "./App";
 import type { Size } from "./windows";
 
@@ -18,6 +18,20 @@ export type AppDef = {
 };
 
 export const apps: AppDef[] = [
+  {
+    id: "chat",
+    titleKey: "apps.chat.title",
+    icon: MessagesSquare,
+    defaultSize: { w: 760, h: 560 },
+    component: lazy(() => import("../apps/Chat")),
+  },
+  {
+    id: "agents",
+    titleKey: "apps.agents.title",
+    icon: Bot,
+    defaultSize: { w: 620, h: 560 },
+    component: lazy(() => import("../apps/Agents")),
+  },
   {
     id: "system",
     titleKey: "apps.system.title",

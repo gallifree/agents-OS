@@ -41,6 +41,8 @@ Guidance for coding agents working in this repository. Read [README.md](./README
 - Errors the UI acts on carry `extensions.code` (`coded()` in `graphql/mod.rs`, `AuthError::code`); the UI translates codes (`errors.*` in `web/locales`), never server messages. Infrastructure errors are logged and returned as `INTERNAL`.
 - The first admin is created with the one-time setup code logged at startup while there are no users (`bin/dev` prints it).
 - `/v1` (`crates/api/src/gateway.rs`) authenticates with API keys only, never the session cookie, and answers OpenAI-shaped errors (`{"error": {"message", "type", "code"}}`).
+- Agent replies run as jobs on the `agents:replies` Stream (`crates/api/src/runtime.rs`), on a dedicated Valkey client (`Services::jobs`) because blocking reads stall a shared connection. A reply is unique per (message, agent): a redelivered job is a no-op.
+- Live updates go through `events::publish` / `events::stream` (Valkey pub/sub). Subscriptions check access when they start.
 - Auth logic lives in `crates/api/src/auth.rs` and is tested against real Postgres + Valkey containers (`cargo test` needs Docker).
 
 ## Planned layout

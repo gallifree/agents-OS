@@ -2,7 +2,7 @@
 
 A self-hosted AI agent platform inspired by [taOS](./taOS), rewritten from scratch with **no Python**: a Rust backend, a React web desktop, and WASM plugins, all shipped with Docker Compose for **x86_64 and arm64**.
 
-> **Status:** milestone 3 done: LLM gateway (OpenAI-compatible providers with encrypted keys, `/v1` with SSE streaming, per-user API keys, usage). Before it: setup, login, sessions, users, Relay IDs. Next: milestone 4 (agents + channels). See [Still open](#still-open).
+> **Status:** milestone 4 done: agents (model + instructions), channels (shared or private) where agents answer live, agent tokens on `/v1`. Before it: LLM gateway, users and sessions. Next: milestone 5 (memory). See [Still open](#still-open).
 
 ## Stack
 
@@ -61,9 +61,14 @@ The first version covers **all features of taOS** (see `taOS/`), delivered in mi
 
 Admins add providers in the **Models** app: any OpenAI-compatible API (OpenAI, Anthropic, OpenRouter, Ollama, vLLM, llama.cpp…). Programs call `POST /v1/chat/completions` (streaming or not), `POST /v1/embeddings` and `GET /v1/models` with `Authorization: Bearer ra_…`, and name models `"<provider>/<model>"` (e.g. `openai/gpt-4o`). Token usage is recorded per user and model, streams included (the gateway asks upstreams for `include_usage`).
 
+## Agents and channels
+
+Agents have a handle (`@name`), a gateway model and instructions. In a channel with one agent, it answers every message; with several, only the `@mentioned` ones answer. Posting a message queues one reply job per agent on the `agents:replies` Valkey Stream; every backend instance runs a worker in the consumer group, which sends the last 30 messages to the model and posts the answer (or the failure reason). Messages, typing indicators and replies reach the browser over GraphQL subscriptions. An **agent token** is a `/v1` key that acts as the agent: limited to its model, usage counted for it.
+
 ## Still open
 
-- LLM gateway: budgets, fallbacks between providers, per-key model allowlists (with agent tokens, milestone 4)
+- LLM gateway: budgets, fallbacks between providers, per-key model allowlists (agent tokens are limited to one model)
+- Chat: Markdown rendering, threads, reactions, attachments, search (Typesense via the outbox), agent tools; channel members other than "everyone" / "only me"; streamed agent replies
 - Evaluation harness for the memory system (LongMemEval)
 - Real-condition tests of Valkey memory growth on 4–8 GB boards; add a recent-in-Valkey / older-in-Postgres split only if needed
 

@@ -100,6 +100,37 @@
       "errors": "Errors",
       "promptTokens": "Prompt tokens",
       "completionTokens": "Completion tokens"
+    },
+    "chat": {
+      "title": "Chat",
+      "newChannel": "New channel",
+      "channelSettings": "Channel settings",
+      "private": "Private (only you can see it)",
+      "agentsInChannel": "Agents in this channel",
+      "noAgents": "No agents yet: create one in the Agents app.",
+      "agentsHint": "With one agent, it answers every message; with several, mention them with @name.",
+      "cancel": "Cancel",
+      "loadOlder": "Load older messages",
+      "empty": "No messages yet. Say hello!",
+      "agentFailed": "Could not answer:",
+      "typing_one": "{{names}} is typing…",
+      "typing_other": "{{names}} are typing…",
+      "placeholder": "Message (Enter to send, Shift+Enter for a new line)",
+      "placeholderMention": "Message — @name an agent to get its answer",
+      "message": "Message",
+      "send": "Send"
+    },
+    "agents": {
+      "title": "Agents",
+      "none": "No agents yet. Create one below, then add it to a channel in Chat.",
+      "new": "New agent",
+      "created": "Agent created.",
+      "nameHint": "Lowercase handle, used as @name in channels.",
+      "noModels": "No model found: an administrator must add a provider in the Models app.",
+      "systemPrompt": "Instructions (system prompt)",
+      "tokens": "Agent tokens",
+      "tokensIntro": "For programs acting as this agent on the /v1 API: limited to its model, usage counted for it.",
+      "tokenName": "Token name"
     }
   },
   "auth": {
@@ -133,6 +164,11 @@
     "INVALID_NAME": "Name: 1–64 characters.",
     "NOT_FOUND": "It no longer exists. Refresh.",
     "INVALID_ID": "Invalid reference. Refresh.",
-    "ID_EXPIRED": "This page is out of date. Refresh."
+    "ID_EXPIRED": "This page is out of date. Refresh.",
+    "INVALID_AGENT_NAME": "Name: 1–32 characters, lowercase letters, digits, \"-\" or \"_\".",
+    "AGENT_EXISTS": "An agent with this name already exists.",
+    "INVALID_MODEL": "Model: \"<provider>/<model>\", e.g. openai/gpt-4o.",
+    "TOO_LONG": "Too long.",
+    "EMPTY_MESSAGE": "The message is empty."
   }
 }

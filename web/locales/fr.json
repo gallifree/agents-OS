@@ -100,6 +100,37 @@
       "errors": "Erreurs",
       "promptTokens": "Jetons d’entrée",
       "completionTokens": "Jetons de sortie"
+    },
+    "chat": {
+      "title": "Discussions",
+      "newChannel": "Nouveau canal",
+      "channelSettings": "Paramètres du canal",
+      "private": "Privé (vous seul le voyez)",
+      "agentsInChannel": "Agents dans ce canal",
+      "noAgents": "Aucun agent pour l’instant : créez-en un dans l’app Agents.",
+      "agentsHint": "Avec un seul agent, il répond à chaque message ; avec plusieurs, mentionnez-les avec @nom.",
+      "cancel": "Annuler",
+      "loadOlder": "Messages plus anciens",
+      "empty": "Aucun message. Dites bonjour !",
+      "agentFailed": "Impossible de répondre :",
+      "typing_one": "{{names}} écrit…",
+      "typing_other": "{{names}} écrivent…",
+      "placeholder": "Message (Entrée pour envoyer, Maj+Entrée pour aller à la ligne)",
+      "placeholderMention": "Message — mentionnez un agent avec @nom pour qu’il réponde",
+      "message": "Message",
+      "send": "Envoyer"
+    },
+    "agents": {
+      "title": "Agents",
+      "none": "Aucun agent pour l’instant. Créez-en un ci-dessous, puis ajoutez-le à un canal dans Discussions.",
+      "new": "Nouvel agent",
+      "created": "Agent créé.",
+      "nameHint": "Identifiant en minuscules, utilisé comme @nom dans les canaux.",
+      "noModels": "Aucun modèle trouvé : un administrateur doit ajouter un fournisseur dans l’app Modèles.",
+      "systemPrompt": "Instructions (prompt système)",
+      "tokens": "Jetons d’agent",
+      "tokensIntro": "Pour les programmes qui agissent en tant que cet agent sur l’API /v1 : limités à son modèle, consommation comptée pour lui.",
+      "tokenName": "Nom du jeton"
     }
   },
   "auth": {
@@ -133,6 +164,11 @@
     "INVALID_NAME": "Nom : 1 à 64 caractères.",
     "NOT_FOUND": "Cet élément n’existe plus. Actualisez.",
     "INVALID_ID": "Référence invalide. Actualisez.",
-    "ID_EXPIRED": "Cette page n’est plus à jour. Actualisez."
+    "ID_EXPIRED": "Cette page n’est plus à jour. Actualisez.",
+    "INVALID_AGENT_NAME": "Nom : 1 à 32 caractères, minuscules, chiffres, « - » ou « _ ».",
+    "AGENT_EXISTS": "Un agent porte déjà ce nom.",
+    "INVALID_MODEL": "Modèle : « <fournisseur>/<modèle> », par ex. openai/gpt-4o.",
+    "TOO_LONG": "Trop long.",
+    "EMPTY_MESSAGE": "Le message est vide."
   }
 }
